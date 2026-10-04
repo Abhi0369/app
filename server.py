@@ -97,12 +97,17 @@ app = FastAPI(title="SolarSinchai hub simulator", lifespan=lifespan)
 
 @app.get("/")
 def index() -> FileResponse:
-    return FileResponse(UI)
+    return FileResponse(UI, headers={
+        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+        "Pragma": "no-cache",
+        "X-RAYNEX-Build": "interactive-2026-10-04",
+    })
 
 
 @app.get("/health")
 def health() -> dict:
-    return {"status": "ok", "simulation_time": world.hub.t.isoformat()}
+    return {"status": "ok", "build": "interactive-2026-10-04",
+            "simulation_time": world.hub.t.isoformat()}
 
 
 @app.get("/api/state")
