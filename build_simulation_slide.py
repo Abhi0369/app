@@ -77,8 +77,8 @@ def add_new_slide(prs: Presentation):
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     bg = slide.background.fill; bg.solid(); bg.fore_color.rgb = rgb(PALE)
 
-    add_text(slide, "Simulation Lab: Prove The Router Before The Hardware", 25, 13, 700, 28, 19, GREEN, True)
-    add_text(slide, "A five-minute digital twin turns the architecture into a testable operating system.",
+    add_text(slide, "Simulation Lab: From Digital Twin To Decision Evidence", 25, 13, 700, 28, 19, GREEN, True)
+    add_text(slide, "Accelerate time, stress the system and turn every control cycle into evidence.",
              25, 43, 720, 18, 10.5, INK)
     add_text(slide, "RAYNEX", 786, 10, 82, 18, 12, GREEN, True)
     add_text(slide, "13", 899, 4, 38, 28, 24, GREEN, True, align=PP_ALIGN.CENTER)
@@ -87,7 +87,7 @@ def add_new_slide(prs: Presentation):
     add_rect(slide, 872, 50, 65, 4, GOLD)
 
     add_rect(slide, 25, 67, 690, 31, GREEN)
-    add_text(slide, "One screen validates energy priority, water logic, cold safety and farmer decisions.",
+    add_text(slide, "Not just live status: the lab explains what happened, why it matters and what to do next.",
              35, 75, 670, 18, 11.5, WHITE, True)
     add_rect(slide, 720, 67, 217, 31, GOLD)
     add_text(slide, "D4: Prototype · E5: Technical Approach", 729, 76, 200, 16, 9, GREEN, True)
@@ -101,20 +101,20 @@ def add_new_slide(prs: Presentation):
 
     # Dense right-side evidence stack.
     panels = [
-        (107, 95, "WHAT IT MODELS", [
-            ("15 kWp array · ", "weather-shaped PV output"),
-            ("Five jobs · ", "cold → water → ice → dryer → grid"),
-            ("Physical state · ", "8 zones, probes, pump, 5 t room"),
+        (107, 95, "RUN THE SYSTEM", [
+            ("Time · ", "5-min physics; +1 hour, day or week"),
+            ("Speed · ", "1×, 60×, 600× or 3000×"),
+            ("Stress · ", "weather, outage, probe and door faults"),
         ]),
-        (207, 95, "HOW TO TEST", [
-            ("Time · ", "1×, 60×, 600× or 3000×"),
-            ("Faults · ", "cloud, heat, outage, probe, open door"),
-            ("People · ", "approve, skip or stop the pump"),
+        (207, 95, "EXPLAIN THE OUTCOME", [
+            ("Trends · ", "solar, on-site load and export"),
+            ("Insights · ", "surplus, driest plot, sensor confidence"),
+            ("Resilience · ", "cold safety and ice autonomy"),
         ]),
-        (307, 110, "WHAT IT PROVES", [
-            ("Priority · ", "critical cold load always comes first"),
-            ("Safety · ", "daylight water + ice-backed cooling"),
-            ("Evidence · ", "exact kWh ledger and run report"),
+        (307, 110, "VALIDATE THE CASE", [
+            ("Claims · ", "72% on site, 35% water, cold ≤7°C"),
+            ("Ledger · ", "exact energy balance + event history"),
+            ("Evidence · ", "CSV telemetry and JSON run report"),
         ]),
     ]
     for y, height, title, lines in panels:
@@ -129,10 +129,10 @@ def add_new_slide(prs: Presentation):
     add_text(slide, "D4 SOFTWARE\nPROTOTYPE", 35, 443, 110, 34, 11, GREEN, True)
     add_text(slide, "Before hardware", 35, 483, 110, 14, 8.5, GREEN, True)
     steps = [
-        ("1", "INJECT", "Change weather or break a sensor"),
-        ("2", "OBSERVE", "Watch power, soil and cold state"),
-        ("3", "DECIDE", "Approve or override the action"),
-        ("4", "VERIFY", "Export evidence against targets"),
+        ("1", "ACCELERATE", "Run an hour, day or week in seconds"),
+        ("2", "STRESS", "Inject weather, grid and device faults"),
+        ("3", "DIAGNOSE", "Read trends and automatic findings"),
+        ("4", "EVIDENCE", "Compare targets; export the run"),
     ]
     sw = (782 / 4)
     for i, (num, title, desc) in enumerate(steps):
@@ -178,20 +178,20 @@ def make_pdf() -> None:
     source = fitz.open(SOURCE); out = fitz.open(); out.insert_pdf(source)
     page = out.new_page(width=W, height=H)
     pdf_rect(page, (0, 0, W, H), PALE)
-    pdf_line(page, "Simulation Lab: Prove The Router Before The Hardware", 25, 32, 19, GREEN, True)
-    pdf_line(page, "A five-minute digital twin turns the architecture into a testable operating system.", 25, 56, 10.5)
+    pdf_line(page, "Simulation Lab: From Digital Twin To Decision Evidence", 25, 32, 19, GREEN, True)
+    pdf_line(page, "Accelerate time, stress the system and turn every control cycle into evidence.", 25, 56, 10.5)
     pdf_line(page, "RAYNEX", 786, 25, 12, GREEN, True)
     pdf_line(page, "13", 902, 28, 24, GREEN, True); pdf_line(page, "of 13", 909, 44, 8, MUTED, True)
     pdf_rect(page, (872, 50, 937, 54), GOLD)
-    pdf_rect(page, (25, 67, 715, 98), GREEN); pdf_line(page, "One screen validates energy priority, water logic, cold safety and farmer decisions.", 35, 87, 11.5, WHITE, True)
+    pdf_rect(page, (25, 67, 715, 98), GREEN); pdf_line(page, "Not just live status: the lab explains what happened, why it matters and what to do next.", 35, 87, 11.5, WHITE, True)
     pdf_rect(page, (720, 67, 937, 98), GOLD); pdf_line(page, "D4: Prototype · E5: Technical Approach", 729, 87, 9, GREEN, True)
     pdf_rect(page, (25, 107, 631, 417), WHITE, LINE)
     page.insert_image(fitz.Rect(30, 112, 626, 410), filename=str(CROP))
     pdf_rect(page, (35, 386, 201, 406), GREEN); pdf_line(page, "LIVE FASTAPI + WEBSOCKET UI", 43, 400, 7.8, WHITE, True)
     panels = [
-        (107, 202, "WHAT IT MODELS", ["15 kWp array - weather-shaped PV output", "Five jobs - cold > water > ice > dryer > grid", "Physical state - 8 zones, probes, pump, 5 t room"]),
-        (207, 302, "HOW TO TEST", ["Time - 1x, 60x, 600x or 3000x", "Faults - cloud, heat, outage, probe, open door", "People - approve, skip or stop the pump"]),
-        (307, 417, "WHAT IT PROVES", ["Priority - critical cold load always comes first", "Safety - daylight water + ice-backed cooling", "Evidence - exact kWh ledger and run report"]),
+        (107, 202, "RUN THE SYSTEM", ["Time - 5-min physics; +1 hour, day or week", "Speed - 1x, 60x, 600x or 3000x", "Stress - weather, outage, probe and door faults"]),
+        (207, 302, "EXPLAIN THE OUTCOME", ["Trends - solar, on-site load and export", "Insights - surplus, driest plot, sensor confidence", "Resilience - cold safety and ice autonomy"]),
+        (307, 417, "VALIDATE THE CASE", ["Claims - 72% on site, 35% water, cold <= 7 C", "Ledger - exact energy balance + event history", "Evidence - CSV telemetry and JSON run report"]),
     ]
     for y1, y2, title, lines in panels:
         pdf_rect(page, (641, y1, 937, y2), WHITE, LINE); pdf_rect(page, (641, y1, 937, y1 + 22), GREEN)
@@ -201,7 +201,7 @@ def make_pdf() -> None:
             pdf_text(page, "- " + line, (650, yy, 925, yy + 19), 8.8, INK); yy += 20
     pdf_rect(page, (25, 429, 937, 512), CREAM, GOLD); pdf_rect(page, (25, 429, 155, 512), GOLD)
     pdf_text(page, "D4 SOFTWARE\nPROTOTYPE", (35, 442, 145, 480), 11, GREEN, True); pdf_text(page, "Before hardware", (35, 484, 145, 500), 8.5, GREEN, True)
-    steps = [("1", "INJECT", "Change weather or\nbreak a sensor"), ("2", "OBSERVE", "Watch power, soil\nand cold state"), ("3", "DECIDE", "Approve or override\nthe action"), ("4", "VERIFY", "Export evidence\nagainst targets")]
+    steps = [("1", "ACCELERATE", "Run an hour, day or\nweek in seconds"), ("2", "STRESS", "Inject weather, grid\nand device faults"), ("3", "DIAGNOSE", "Read trends and\nautomatic findings"), ("4", "EVIDENCE", "Compare targets;\nexport the run")]
     sw = 782 / 4
     for i, (num, title, desc) in enumerate(steps):
         x = 155 + i * sw
