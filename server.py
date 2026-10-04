@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import asyncio
 import json
+import math
+from collections import deque
 from contextlib import asynccontextmanager
 from datetime import timedelta
 from pathlib import Path
@@ -40,12 +42,68 @@ class World:
         self.paused = False
         self._acc = 0.0
         self.cmd: dict = {}
+        self.history: deque[dict] = deque(maxlen=2016)  # seven simulated days
+        self.events: deque[dict] = deque(maxlen=40)
         self.step()                     # first telemetry so the UI has data immediately
 
     def step(self) -> None:
         self.hub.cold.load_kg = 400 + self.edge.stored_kg()      # neighbours' crates + Ramesh's lots
         tel = self.hub.step(self.cmd)
         self.cmd = self.edge.on_telemetry(tel)
+        loads = tel.get("loads_kw", {})
+        self.history.append({
+            "time": tel["time"], "pv": tel.get("pv_kw", 0),
+            "cold_kw": loads.get("cold", 0), "pump_kw": loads.get("irrigation", 0),
+            "ice_kw": loads.get("ice", 0), "dryer_kw": loads.get("dryer", 0),
+            "export_kw": loads.get("export", 0), "cold_c": tel["cold"]["temp_c"],
+            "soil_avg": round(sum(z["moisture"] for z in tel["zones"]) / len(tel["zones"]), 1),
+            "soil_min": min(z["moisture"] for z in tel["zones"]),
+            "water_m3": tel["totals"]["water_m3"], "outage": tel["grid_outage"],
+        })
+
+    def log_event(self, title: str, detail: str) -> None:
+        self.events.appendleft({"time": self.hub.t.isoformat(), "title": title, "detail": detail})
+
+    def analytics(self) -> dict:
+        tel, hist = self.hub.telemetry(), list(self.history)
+        totals = tel["totals"]
+        onsite = sum(totals[f"{name}_kwh"] for name in ("cold", "irrigation", "ice", "dryer"))
+        onsite_pct = round(100 * onsite / max(totals["pv_kwh"], .001), 1)
+        safe_pct = round(100 * sum(p["cold_c"] <= 7 for p in hist) / max(len(hist), 1), 1)
+        driest = min(tel["zones"], key=lambda z: z["moisture"])
+        faults = sum(bool(p["fault"]) for z in tel["zones"] for p in z["probes"])
+        autonomy = round(tel["cold"]["ice_kwh"] / 2.3, 1)
+        run_hours = round(len(hist) * 5 / 60, 1)
+        insights = []
+        if len(hist) < 24:
+            insights.append({"level": "info", "title": "Build a representative window",
+                             "detail": "Run at least 2 simulated hours before judging solar utilisation."})
+        elif onsite_pct < 60:
+            insights.append({"level": "opportunity", "title": "Surplus solar is available",
+                             "detail": f"Only {onsite_pct}% has been used on site. Schedule drying or ice charging in the solar window."})
+        else:
+            insights.append({"level": "good", "title": "Solar is serving productive loads",
+                             "detail": f"{onsite_pct}% of generated energy has stayed on site; the project target is 72%."})
+        gap = round(driest["target"] - driest["moisture"], 1)
+        insights.append({"level": "warning" if gap > 5 else "good", "title": f"{driest['id']} is the priority plot",
+                         "detail": f"{driest['crop']} soil is {driest['moisture']}%, {max(0, gap)} points below its target."})
+        insights.append({"level": "warning" if autonomy < 3 else "good", "title": f"{autonomy} h thermal autonomy",
+                         "detail": f"The ice reserve can support roughly {autonomy} hours at the nominal 2.3 kW cooling load."})
+        insights.append({"level": "warning" if faults else "good", "title": "Sensor confidence " + ("reduced" if faults else "healthy"),
+                         "detail": f"{faults} of 16 soil probes are unavailable." if faults else "All 16 soil probes are reporting."})
+        stride = max(1, math.ceil(len(hist) / 96))
+        trend = hist[::stride]
+        if hist and trend[-1] is not hist[-1]:
+            trend.append(hist[-1])
+        load_mix = [{"name": n.title(), "kwh": round(totals[f"{n}_kwh"], 2)}
+                    for n in ("cold", "irrigation", "ice", "dryer", "export")]
+        return {
+            "window_hours": run_hours, "cold_safe_pct": safe_pct, "thermal_autonomy_h": autonomy,
+            "onsite_pct": onsite_pct, "export_revenue_inr": round(totals["export_kwh"] * 3.05, 2),
+            "water_delivered_m3": totals["water_m3"], "driest_zone": driest["id"],
+            "probe_availability_pct": round(100 * (16 - faults) / 16), "insights": insights,
+            "trend": trend, "load_mix": load_mix, "events": list(self.events),
+        }
 
     def tick(self) -> bool:
         if self.paused:
@@ -62,6 +120,7 @@ class World:
         s = self.edge.snapshot()
         s["sim"] = {"speed": self.speed, "paused": self.paused, "truth": self.hub.truth(),
                     "speeds": list(SPEEDS)}
+        s["analytics"] = self.analytics()
         return s
 
 
@@ -100,13 +159,13 @@ def index() -> FileResponse:
     return FileResponse(UI, headers={
         "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
         "Pragma": "no-cache",
-        "X-RAYNEX-Build": "interactive-2026-10-04",
+        "X-RAYNEX-Build": "insights-2026-10-04",
     })
 
 
 @app.get("/health")
 def health() -> dict:
-    return {"status": "ok", "build": "interactive-2026-10-04",
+    return {"status": "ok", "build": "insights-2026-10-04",
             "simulation_time": world.hub.t.isoformat()}
 
 
@@ -164,6 +223,12 @@ async def sim(a: SimAction) -> dict:
     elif a.action == "step_hour":
         for _ in range(12):
             world.step()
+    elif a.action == "step_day":
+        for _ in range(288):
+            world.step()
+    elif a.action == "step_week":
+        for _ in range(2016):
+            world.step()
     elif a.action == "heatwave":
         h.weather.overrides[tomorrow] = {"tmax": 41.0, "tmin": 27.0, "cloud": 0.0, "rain_mm": 0.0}
         world.edge.forecast = h.weather.forecast(today)
@@ -185,6 +250,17 @@ async def sim(a: SimAction) -> dict:
         world.reset()
     else:
         return {"result": "unknown action"}
+    event_names = {"heatwave": ("Heatwave scheduled", "Tomorrow reaches 41°C."),
+                   "rain": ("Rain forecast injected", "Tomorrow receives 22 mm."),
+                   "cloudy": ("Cloud cover injected", "PV output is derated today."),
+                   "probe_fault": ("Probe state changed", "Z2 deep probe toggled."),
+                   "grid_outage": ("Grid state changed", "Grid availability toggled."),
+                   "door": ("Cold-room door changed", "Door contact toggled."),
+                   "harvest": ("Harvest received", f"{a.value or 200} kg added to storage."),
+                   "step_day": ("Day advanced", "288 control cycles completed."),
+                   "step_week": ("Week advanced", "2,016 control cycles completed.")}
+    if a.action in event_names:
+        world.log_event(*event_names[a.action])
     if a.action in {"heatwave", "rain", "cloudy", "probe_fault", "grid_outage", "door", "harvest"}:
         world.step()  # make the injected condition visible in telemetry immediately
     await broadcast()

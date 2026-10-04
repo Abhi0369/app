@@ -21,4 +21,17 @@ Open <http://127.0.0.1:8000>. From inside this folder, `python -m uvicorn server
 - Confirm cold safety, exact energy balance and the project targets in **Claim validation**.
 - Toggle the same scenario button again to clear grid, probe and door faults; **Reset** restores the baseline.
 
+## Decision intelligence
+
+The simulator retains a rolling seven-day telemetry window and turns it into operational evidence:
+
+- Solar, productive load and export trends
+- Cold-chain safety percentage and estimated ice autonomy
+- Driest-zone priority and soil-probe availability
+- Automatic findings explaining risks and opportunities
+- Timestamped scenario-event history
+- One-click telemetry CSV and complete JSON run-report exports
+
+Use **+1 day** or **+1 week** to build a representative analysis window quickly. Short windows are intentionally labelled as provisional.
+
 This is a deterministic functional digital twin. It validates control logic and user journeys; it does not replace a calibrated PVsyst, EPANET, refrigeration or AquaCrop study for procurement-grade sizing.
